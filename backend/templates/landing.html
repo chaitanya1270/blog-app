@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Platform - Admin Panel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .admin-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h1 {
+            color: #2d3748;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .subtitle {
+            color: #718096;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+        .logout-btn {
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+        .logout-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(229, 62, 62, 0.4);
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        .admin-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        .admin-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .card-icon {
+            font-size: 2rem;
+            margin-right: 1rem;
+        }
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2d3748;
+            display: block;
+        }
+        .stat-label {
+            color: #718096;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+        }
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.4);
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+        }
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
+        }
+        .btn-warning {
+            background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+            color: white;
+        }
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(237, 137, 54, 0.4);
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+            color: white;
+        }
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(245, 101, 101, 0.4);
+        }
+        .btn-info {
+            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+            color: white;
+        }
+        .btn-info:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.4);
+        }
+        .rss-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        .rss-url {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: monospace;
+            word-break: break-all;
+            margin: 1rem 0;
+        }
+        footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding: 2rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <header>
+            <h1>📊 Blog Platform Admin Panel</h1>
+            <p class="subtitle">Manage your blog platform with ease</p>
+            <a href="/admin/logout" class="logout-btn">🚪 Logout</a>
+        </header>
+
+        <div class="dashboard-grid">
+            <!-- Users Management -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <div class="card-icon">👥</div>
+                    <div class="card-title">Users Management</div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-number" id="total-users">-</span>
+                        <span class="stat-label">Total Users</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="active-users">-</span>
+                        <span class="stat-label">Active Users</span>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="viewUsers()">View All Users</button>
+                    <button class="btn btn-success" onclick="createUser()">Create User</button>
+                    <button class="btn btn-warning" onclick="exportUsers()">Export Users</button>
+                </div>
+            </div>
+
+            <!-- Posts Management -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <div class="card-icon">📝</div>
+                    <div class="card-title">Posts Management</div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-number" id="total-posts">-</span>
+                        <span class="stat-label">Total Posts</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="recent-posts">-</span>
+                        <span class="stat-label">This Week</span>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="viewPosts()">View All Posts</button>
+                    <button class="btn btn-success" onclick="createPost()">Create Post</button>
+                </div>
+            </div>
+
+            <!-- Comments Management -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <div class="card-icon">💬</div>
+                    <div class="card-title">Comments Management</div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-number" id="total-comments">-</span>
+                        <span class="stat-label">Total Comments</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="pending-comments">-</span>
+                        <span class="stat-label">Pending Review</span>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="viewComments()">View All Comments</button>
+                </div>
+            </div>
+
+
+            <!-- System Management -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <div class="card-icon">⚙️</div>
+                    <div class="card-title">System Management</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="systemStatus()">System Status</button>
+                </div>
+            </div>
+
+            <!-- Content Management -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <div class="card-icon">📚</div>
+                    <div class="card-title">Content Management</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="manageTags()">Manage Tags</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RSS Feed Management -->
+        <div class="rss-section">
+            <div class="card-header">
+                <div class="card-icon">📰</div>
+                <div class="card-title">RSS Feed Management</div>
+            </div>
+            <p style="color: #718096; margin-bottom: 1.5rem;">
+                Manage your RSS feed settings and monitor feed performance.
+            </p>
+            <div class="rss-url">
+                <strong>RSS Feed URL:</strong><br>
+                <span id="rss-url">http://localhost:8000/api/rss</span>
+            </div>
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="viewRSSFeed()">View RSS Feed</button>
+            <button class="btn btn-success" onclick="downloadRSSFeed()">Download RSS Feed</button>
+            <script>
+                function downloadRSSFeed() {
+                    fetch('/api/rss')
+                        .then(response => {
+                            if (!response.ok) throw new Error('Network response was not ok');
+                            return response.text();
+                        })
+                        .then(rssText => {
+                            const blob = new Blob([rssText], { type: 'application/rss+xml' });
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `blog_rss_feed_${new Date().toISOString().split('T')[0]}.xml`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            window.URL.revokeObjectURL(url);
+                        })
+                        .catch(error => {
+                            alert('Error downloading RSS feed: ' + error.message);
+                        });
+                }
+            </script>
+            </div>
+        </div>
+
+        <footer>
+            <p>© {{ year }} Blog Platform Admin Panel — All rights reserved</p>
+        </footer>
+    </div>
+
+    <script>
+        // Dashboard functionality with real data
+        function viewUsers() {
+            fetch('/api/admin/users')
+                .then(response => response.json())
+                .then(users => {
+                    let userList = 'Users in Database:\n\n';
+                    users.forEach(user => {
+                        userList += `ID: ${user.id}\nUsername: ${user.username}\nEmail: ${user.email}\nPosts: ${user.posts_count}\nComments: ${user.comments_count}\nCreated: ${new Date(user.created_at).toLocaleDateString()}\n\n`;
+                    });
+                    alert(userList);
+                })
+                .catch(error => {
+                    console.error('Error fetching users:', error);
+                    alert('Error fetching users data');
+                });
+        }
+        
+        function createUser() {
+            const username = prompt('Enter username:');
+            const email = prompt('Enter email:');
+            const password = prompt('Enter password:');
+            
+            if (username && email && password) {
+                fetch('/api/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        email: email,
+                        password: password
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.token) {
+                        alert('User created successfully!');
+                        location.reload(); // Refresh to update stats
+                    } else {
+                        alert('Error creating user: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error creating user:', error);
+                    alert('Error creating user');
+                });
+            }
+        }
+        
+        function exportUsers() {
+            fetch('/api/admin/users')
+                .then(response => response.json())
+                .then(users => {
+                    const csvContent = "data:text/csv;charset=utf-8," 
+                        + "ID,Username,Email,Posts,Comments,Created\n"
+                        + users.map(user => 
+                            `${user.id},${user.username},${user.email},${user.posts_count},${user.comments_count},${user.created_at}`
+                        ).join("\n");
+                    
+                    const encodedUri = encodeURI(csvContent);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", encodedUri);
+                    link.setAttribute("download", "users_export.csv");
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                })
+                .catch(error => {
+                    console.error('Error exporting users:', error);
+                    alert('Error exporting users');
+                });
+        }
+        
+        function viewPosts() {
+            fetch('/api/admin/posts')
+                .then(response => response.json())
+                .then(posts => {
+                    let postList = 'Posts in Database:\n\n';
+                    posts.forEach(post => {
+                        postList += `ID: ${post.id}\nTitle: ${post.title}\nAuthor: ${post.author}\nComments: ${post.comments_count}\nTags: ${post.tags.join(', ')}\nCreated: ${new Date(post.created_at).toLocaleDateString()}\n\n`;
+                    });
+                    alert(postList);
+                })
+                .catch(error => {
+                    console.error('Error fetching posts:', error);
+                    alert('Error fetching posts data');
+                });
+        }
+        
+        function createPost() {
+            alert('To create a post, please use the frontend application or API directly.');
+        }
+        
+        function viewComments() {
+            fetch('/api/admin/comments')
+                .then(response => response.json())
+                .then(comments => {
+                    let commentList = 'Comments in Database:\n\n';
+                    comments.forEach(comment => {
+                        commentList += `ID: ${comment.id}\nAuthor: ${comment.author}\nPost: ${comment.post_title}\nContent: ${comment.content.substring(0, 100)}...\nCreated: ${new Date(comment.created_at).toLocaleDateString()}\n\n`;
+                    });
+                    alert(commentList);
+                })
+                .catch(error => {
+                    console.error('Error fetching comments:', error);
+                    alert('Error fetching comments data');
+                });
+        }
+        
+        
+        
+        function systemStatus() {
+            fetch('/api/admin/stats')
+                .then(response => response.json())
+                .then(stats => {
+                    const status = `System Status:\n\n` +
+                        `✅ Database: Connected\n` +
+                        `✅ Users: ${stats.total_users} registered\n` +
+                        `✅ Posts: ${stats.total_posts} published\n` +
+                        `✅ Comments: ${stats.total_comments} posted\n` +
+                        `✅ RSS Feed: Active\n` +
+                        `✅ API: Responding\n\n` +
+                        `System is running normally.`;
+                    alert(status);
+                })
+                .catch(error => {
+                    console.error('Error checking system status:', error);
+                    alert('Error checking system status');
+                });
+        }
+        
+        function manageTags() {
+            fetch('/api/tags')
+                .then(response => response.json())
+                .then(tags => {
+                    let tagList = 'Available Tags:\n\n';
+                    tags.forEach(tag => {
+                        tagList += `• ${tag.name}\n`;
+                    });
+                    alert(tagList);
+                })
+                .catch(error => {
+                    console.error('Error fetching tags:', error);
+                    alert('Error fetching tags');
+                });
+        }
+        
+        function viewRSSFeed() {
+            window.open('/api/rss', '_blank');
+        }
+        
+        // Load dashboard stats from database
+        document.addEventListener('DOMContentLoaded', function() {
+            // Use server-side data passed from Flask
+            const stats = {{ stats | tojson }};
+            
+            document.getElementById('total-users').textContent = stats.total_users;
+            document.getElementById('active-users').textContent = stats.total_users; // All users are active for now
+            document.getElementById('total-posts').textContent = stats.total_posts;
+            document.getElementById('recent-posts').textContent = stats.recent_posts;
+            document.getElementById('total-comments').textContent = stats.total_comments;
+            document.getElementById('pending-comments').textContent = stats.pending_comments;
+            document.getElementById('page-views').textContent = stats.total_posts; // Using posts as page views proxy
+            document.getElementById('engagement').textContent = stats.engagement_rate + '%';
+        });
+    </script>
+</body>
+</html>

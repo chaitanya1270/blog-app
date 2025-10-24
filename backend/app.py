@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, render_template, session, redirect, url_for, flash, Response
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -7,6 +7,7 @@ import os
 from datetime import datetime, timedelta
 import uuid
 import jwt
+import xml.etree.ElementTree as ET
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
@@ -122,7 +123,89 @@ with app.app_context():
     db.create_all()
 
 # API Routes
+# Admin Authentication Routes
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        if username == 'admin' and password == 'admin123':
+            session['admin_logged_in'] = True
+            return redirect(url_for('landing_page'))
+        else:
+            flash('Invalid credentials', 'error')
+    
+    return '''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Admin Login</title>
+        <style>
+            body { font-family: Arial, sans-serif; background: #f8f9fa; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+            .login-container { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 300px; }
+            h2 { text-align: center; color: #333; margin-bottom: 1.5rem; }
+            input { width: 100%; padding: 0.8rem; margin: 0.5rem 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+            button { width: 100%; padding: 0.8rem; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
+            button:hover { background: #0056b3; }
+            .error { color: red; text-align: center; margin-top: 1rem; }
+        </style>
+    </head>
+    <body>
+        <div class="login-container">
+            <h2>Admin Login</h2>
+            <form method="POST">
+                <input type="text" name="username" placeholder="Username" required>
+                <input type="password" name="password" placeholder="Password" required>
+                <button type="submit">Login</button>
+            </form>
+            <div class="error">Username: admin, Password: admin123</div>
+        </div>
+    </body>
+    </html>
+    '''
 
+@app.route('/admin/logout')
+def admin_logout():
+    session.pop('admin_logged_in', None)
+    return redirect(url_for('admin_login'))
+
+@app.route('/')
+def landing_page():
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+    
+    # Get real statistics from database
+    total_users = User.query.count()
+    total_posts = Post.query.count()
+    total_comments = Comment.query.count()
+    
+    # Get recent posts (last 7 days)
+    week_ago = datetime.now() - timedelta(days=7)
+    recent_posts = Post.query.filter(Post.created_at >= week_ago).count()
+    
+    # Get posts with comments (engagement)
+    posts_with_comments = Post.query.filter(Post.comments.any()).count()
+    engagement_rate = (posts_with_comments / total_posts * 100) if total_posts > 0 else 0
+    
+    # Get pending comments (if you add a status field later)
+    pending_comments = 0  # For now, all comments are approved
+    
+    # Get recent comments
+    recent_comments = Comment.query.filter(Comment.created_at >= week_ago).count()
+    
+    stats = {
+        'total_users': total_users,
+        'total_posts': total_posts,
+        'total_comments': total_comments,
+        'recent_posts': recent_posts,
+        'recent_comments': recent_comments,
+        'engagement_rate': round(engagement_rate, 1),
+        'pending_comments': pending_comments
+    }
+    
+    return render_template('landing.html', year=datetime.now().year, stats=stats)
+    
 # Auth Routes
 @app.route('/api/register', methods=['POST'])
 def register():
@@ -428,6 +511,126 @@ def get_dashboard():
             'title': post.title,
             'created_at': post.created_at.isoformat()
         } for post in recent_posts]
+    })
+
+# RSS Feed Route
+@app.route('/api/rss')
+def rss_feed():
+    # Get recent posts (last 20)
+    posts = Post.query.order_by(Post.created_at.desc()).limit(20).all()
+    
+    # Create RSS XML
+    rss = ET.Element("rss")
+    rss.set("version", "2.0")
+    rss.set("xmlns:atom", "http://www.w3.org/2005/Atom")
+    
+    channel = ET.SubElement(rss, "channel")
+    
+    # Channel information
+    ET.SubElement(channel, "title").text = "Blog Platform RSS Feed"
+    ET.SubElement(channel, "description").text = "Latest blog posts from our platform"
+    ET.SubElement(channel, "link").text = "http://localhost:8000"
+    ET.SubElement(channel, "language").text = "en-us"
+    ET.SubElement(channel, "lastBuildDate").text = datetime.now().strftime("%a, %d %b %Y %H:%M:%S GMT")
+    
+    # Add atom:link for self-reference
+    atom_link = ET.SubElement(channel, "atom:link")
+    atom_link.set("href", "http://localhost:8000/api/rss")
+    atom_link.set("rel", "self")
+    atom_link.set("type", "application/rss+xml")
+    
+    # Add posts as items
+    for post in posts:
+        item = ET.SubElement(channel, "item")
+        ET.SubElement(item, "title").text = post.title
+        ET.SubElement(item, "description").text = post.content[:500] + "..." if len(post.content) > 500 else post.content
+        ET.SubElement(item, "link").text = f"http://localhost:8000/api/posts/{post.id}"
+        ET.SubElement(item, "guid").text = f"http://localhost:8000/api/posts/{post.id}"
+        ET.SubElement(item, "pubDate").text = post.created_at.strftime("%a, %d %b %Y %H:%M:%S GMT")
+        ET.SubElement(item, "author").text = post.author.username
+        
+        # Add tags as categories
+        for tag in post.tags:
+            ET.SubElement(item, "category").text = tag.name
+    
+    # Convert to string
+    rss_str = ET.tostring(rss, encoding='unicode', method='xml')
+    
+    return Response(rss_str, mimetype='application/rss+xml')
+
+# Admin API Routes
+@app.route('/api/admin/users')
+def admin_get_users():
+    if not session.get('admin_logged_in'):
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    users = User.query.all()
+    return jsonify([{
+        'id': user.id,
+        'username': user.username,
+        'email': user.email,
+        'created_at': user.created_at.isoformat(),
+        'posts_count': len(user.posts),
+        'comments_count': len(user.comments)
+    } for user in users])
+
+@app.route('/api/admin/posts')
+def admin_get_posts():
+    if not session.get('admin_logged_in'):
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    posts = Post.query.order_by(Post.created_at.desc()).all()
+    return jsonify([{
+        'id': post.id,
+        'title': post.title,
+        'content': post.content[:200] + '...' if len(post.content) > 200 else post.content,
+        'author': post.author.username,
+        'created_at': post.created_at.isoformat(),
+        'comments_count': len(post.comments),
+        'tags': [tag.name for tag in post.tags],
+        'image_url': post.image_url
+    } for post in posts])
+
+@app.route('/api/admin/comments')
+def admin_get_comments():
+    if not session.get('admin_logged_in'):
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    comments = Comment.query.order_by(Comment.created_at.desc()).all()
+    return jsonify([{
+        'id': comment.id,
+        'content': comment.content,
+        'author': comment.author.username,
+        'post_title': comment.post.title,
+        'created_at': comment.created_at.isoformat()
+    } for comment in comments])
+
+@app.route('/api/admin/stats')
+def admin_get_stats():
+    if not session.get('admin_logged_in'):
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    total_users = User.query.count()
+    total_posts = Post.query.count()
+    total_comments = Comment.query.count()
+    
+    # Get recent activity (last 7 days)
+    week_ago = datetime.now() - timedelta(days=7)
+    recent_posts = Post.query.filter(Post.created_at >= week_ago).count()
+    recent_comments = Comment.query.filter(Comment.created_at >= week_ago).count()
+    
+    # Get engagement rate
+    posts_with_comments = Post.query.filter(Post.comments.any()).count()
+    engagement_rate = (posts_with_comments / total_posts * 100) if total_posts > 0 else 0
+    
+    return jsonify({
+        'total_users': total_users,
+        'total_posts': total_posts,
+        'total_comments': total_comments,
+        'recent_posts': recent_posts,
+        'recent_comments': recent_comments,
+        'engagement_rate': round(engagement_rate, 1),
+        'pending_comments': 0  # All comments are approved for now
     })
 
 if __name__ == '__main__':
